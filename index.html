@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StarLab - Космический исследовательский центр</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Orbitron', 'Arial', sans-serif;
+        }
+
+        :root {
+            --deep-space: #050518;
+            --cosmic-purple: #1a0b2e;
+            --neon-blue: #00f3ff;
+            --neon-purple: #b967ff;
+            --neon-pink: #ff2a6d;
+            --star-white: #ffffff;
+            --text-glow: #e0e0ff;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        body {
+            background: linear-gradient(135deg, var(--deep-space) 0%, var(--cosmic-purple) 100%);
+            color: var(--star-white);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        #starCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+        }
+
+        #nebulaCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Неоновый заголовок */
+        .neon-text {
+            text-shadow: 
+                0 0 5px var(--neon-blue),
+                0 0 10px var(--neon-blue),
+                0 0 15px var(--neon-blue),
+                0 0 20px var(--neon-purple),
+                0 0 35px var(--neon-purple),
+                0 0 40px var(--neon-purple);
+            animation: neon-pulse 2s infinite alternate;
+        }
+
+        @keyframes neon-pulse {
+            from {
+                text-shadow: 
+                    0 0 5px var(--neon-blue),
+                    0 0 10px var(--neon-blue),
+                    0 0 15px var(--neon-blue),
+                    0 0 20px var(--neon-purple);
+            }
+            to {
+                text-shadow: 
+                    0 0 10px var(--neon-blue),
+                    0 0 20px var(--neon-blue),
+                    0 0 30px var(--neon-blue),
+                    0 0 40px var(--neon-purple),
+                    0 0 50px var(--neon-purple),
+                    0 0 60px var(--neon-purple);
+            }
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 5%;
+            background: rgba(5, 5, 24, 0.7);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+        }
+
+        .navbar.scrolled {
+            padding: 1rem 5%;
+            background: rgba(5, 5, 24, 0.95);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+
+        .nav-brand h1 {
+            font-size: 1.8rem;
+            color: var(--neon-blue);
+            margin-bottom: 0.2rem;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .nav-brand span {
+            font-size: 0.8rem;
+            color: var(--text-glow);
+            letter-spacing: 2px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-menu li {
+            margin-left: 2rem;
+        }
+
+        .nav-menu a {
+            color: var(--text-glow);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            position: relative;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        .nav-menu a:hover {
+            color: var(--neon-blue);
+            text-shadow: 0 0 8px var(--neon-blue);
+            background: rgba(0, 243, 255, 0.1);
+        }
+
+        .nav-menu a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: var(--neon-blue);
+            transition: width 0.3s;
+            box-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        .nav-menu a:hover::after {
+            width: 100%;
+        }
+
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        .nav-toggle span {
+            width: 25px;
+            height: 3px;
+            background: var(--neon-blue);
+            margin: 3px 0;
+            transition: 0.3s;
+            box-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 0 5%;
+            padding-top: 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 70% 30%, rgba(185, 103, 255, 0.2) 0%, transparent 50%),
+                        radial-gradient(circle at 30% 70%, rgba(0, 243, 255, 0.15) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .hero-content {
+            flex: 1;
+            max-width: 600px;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            line-height: 1.2;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+            animation: title-glow 3s infinite alternate;
+        }
+
+        @keyframes title-glow {
+            0% {
+                text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+            }
+            100% {
+                text-shadow: 0 0 20px rgba(0, 243, 255, 0.8), 0 0 30px rgba(185, 103, 255, 0.6);
+            }
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: var(--text-glow);
+            margin-bottom: 2.5rem;
+            max-width: 500px;
+            text-shadow: 0 0 10px rgba(224, 224, 255, 0.5);
+        }
+
+        .cta-button {
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            color: var(--deep-space);
+            border: none;
+            padding: 15px 35px;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 700;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 25px var(--neon-blue), 0 0 30px var(--neon-purple);
+        }
+
+        .cta-button::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(45deg);
+            transition: all 0.5s;
+        }
+
+        .cta-button:hover::after {
+            left: 100%;
+        }
+
+        .planet-animation {
+            flex: 1;
+            height: 500px;
+            position: relative;
+        }
+
+        #planet-3d {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 20px var(--neon-blue));
+        }
+
+        .section {
+            padding: 100px 5%;
+            position: relative;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(255, 42, 109, 0.1) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .section.dark {
+            background: rgba(26, 11, 46, 0.3);
+            border-top: 1px solid rgba(0, 243, 255, 0.1);
+            border-bottom: 1px solid rgba(0, 243, 255, 0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2.8rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            width: 150px;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 2px;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .about-content {
+            display: flex;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .about-text {
+            flex: 2;
+        }
+
+        .about-text p {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            color: var(--text-glow);
+            text-shadow: 0 0 5px rgba(224, 224, 255, 0.3);
+        }
+
+        .about-stats {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 25px;
+            background: rgba(5, 5, 24, 0.5);
+            border-radius: 10px;
+            transition: all 0.3s;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat:hover {
+            transform: translateY(-10px);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+
+        .stat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .stat:hover::before {
+            left: 100%;
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--neon-blue);
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: var(--text-glow);
+            letter-spacing: 1px;
+        }
+
+        .missions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .mission-card {
+            background: rgba(5, 5, 24, 0.6);
+            border-radius: 15px;
+            padding: 30px;
+            transition: all 0.3s;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mission-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.05) 0%, rgba(185, 103, 255, 0.05) 100%);
+            z-index: -1;
+        }
+
+        .mission-card:hover {
+            transform: translateY(-15px) scale(1.02);
+            border-color: var(--neon-blue);
+            box-shadow: 0 10px 30px rgba(0, 243, 255, 0.3);
+        }
+
+        .mission-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 5px var(--neon-blue));
+        }
+
+        .mission-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        .mission-card p {
+            color: var(--text-glow);
+            margin-bottom: 20px;
+        }
+
+        .mission-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            text-shadow: 0 0 5px var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        .research-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .research-item {
+            background: rgba(5, 5, 24, 0.6);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            transition: all 0.3s;
+            border: 1px solid rgba(185, 103, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .research-item:hover {
+            transform: translateY(-10px);
+            border-color: var(--neon-purple);
+            box-shadow: 0 10px 25px rgba(185, 103, 255, 0.3);
+        }
+
+        .research-item h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--neon-purple);
+            text-shadow: 0 0 5px var(--neon-purple);
+        }
+
+        .research-item p {
+            color: var(--text-glow);
+        }
+
+        .gallery-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .gallery-item {
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            position: relative;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.4);
+        }
+
+        .gallery-image {
+            height: 250px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .gallery-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(0, 243, 255, 0.2), rgba(185, 103, 255, 0.2));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .gallery-item:hover .gallery-image::after {
+            opacity: 1;
+        }
+
+        #gallery-1 {
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), 
+                        url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80');
+        }
+
+        #gallery-2 {
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), 
+                        url('https://images.unsplash.com/photo-1502134249126-9f3755a50d78?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80');
+        }
+
+        #gallery-3 {
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), 
+                        url('https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80');
+        }
+
+        .gallery-caption {
+            padding: 15px;
+            background: rgba(5, 5, 24, 0.8);
+            text-align: center;
+            font-weight: 600;
+            color: var(--neon-blue);
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        .contact-content {
+            display: flex;
+            gap: 50px;
+        }
+
+        .contact-info {
+            flex: 1;
+        }
+
+        .contact-info h3 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        .contact-info p {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-glow);
+        }
+
+        .contact-form {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .contact-form input,
+        .contact-form textarea {
+            padding: 15px;
+            background: rgba(5, 5, 24, 0.6);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 8px;
+            color: var(--text-glow);
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .contact-form input:focus,
+        .contact-form textarea:focus {
+            outline: none;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        .contact-form button {
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            color: var(--deep-space);
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        .contact-form button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px var(--neon-blue), 0 0 25px var(--neon-purple);
+        }
+
+        footer {
+            background: rgba(5, 5, 24, 0.9);
+            padding: 40px 5%;
+            text-align: center;
+            border-top: 1px solid rgba(0, 243, 255, 0.2);
+        }
+
+        footer .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        footer p {
+            color: var(--text-glow);
+        }
+
+        .social-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .social-links a {
+            color: var(--neon-blue);
+            font-size: 1.5rem;
+            transition: all 0.3s;
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        .social-links a:hover {
+            color: var(--neon-purple);
+            transform: translateY(-5px);
+            text-shadow: 0 0 10px var(--neon-purple);
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(5, 5, 24, 0.9);
+            color: var(--neon-blue);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.5s;
+            z-index: 1001;
+            border: 1px solid var(--neon-blue);
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        .notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Анимация пульсации для неоновых элементов */
+        @keyframes pulse-glow {
+            0% {
+                box-shadow: 0 0 5px var(--neon-blue);
+            }
+            50% {
+                box-shadow: 0 0 20px var(--neon-blue), 0 0 30px var(--neon-purple);
+            }
+            100% {
+                box-shadow: 0 0 5px var(--neon-blue);
+            }
+        }
+
+        .pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 992px) {
+            .about-content {
+                flex-direction: column;
+            }
+            
+            .contact-content {
+                flex-direction: column;
+            }
+            
+            .hero-title {
+                font-size: 3rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                position: fixed;
+                top: 80px;
+                right: -100%;
+                flex-direction: column;
+                background: rgba(5, 5, 24, 0.95);
+                width: 80%;
+                height: calc(100vh - 80px);
+                transition: 0.5s;
+                padding-top: 50px;
+                align-items: center;
+                border-left: 1px solid var(--neon-blue);
+            }
+            
+            .nav-menu.active {
+                right: 0;
+            }
+            
+            .nav-menu li {
+                margin: 15px 0;
+            }
+            
+            .nav-toggle {
+                display: flex;
+            }
+            
+            .hero {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .hero-content {
+                margin-bottom: 50px;
+            }
+            
+            .planet-animation {
+                width: 100%;
+                height: 300px;
+            }
+            
+            footer .container {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .section-title {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Фоновый канвас для звездного неба -->
+    <canvas id="starCanvas"></canvas>
+    
+    <!-- Канвас для туманностей -->
+    <canvas id="nebulaCanvas"></canvas>
+    
+    <!-- Основной контент -->
+    <div class="content">
+        <header>
+            <nav class="navbar">
+                <div class="nav-brand">
+                    <h1 class="neon-text">StarLab</h1>
+                    <span>КОСМИЧЕСКИЙ ИССЛЕДОВАТЕЛЬСКИЙ ЦЕНТР</span>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#about">О НАС</a></li>
+                    <li><a href="#missions">МИССИИ</a></li>
+                    <li><a href="#research">ИССЛЕДОВАНИЯ</a></li>
+                    <li><a href="#gallery">ГАЛЕРЕЯ</a></li>
+                    <li><a href="#contact">КОНТАКТЫ</a></li>
+                </ul>
+                <div class="nav-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </nav>
+        </header>
+
+        <main>
+            <section id="hero" class="hero">
+                <div class="hero-content">
+                    <h2 class="hero-title">ИССЛЕДУЙТЕ ВСЕЛЕННУЮ С НАМИ</h2>
+                    <p class="hero-subtitle">Открывая тайны космоса для будущего человечества. Наша команда ученых и инженеров работает над самыми амбициозными космическими проектами.</p>
+                    <button class="cta-button pulse-glow" id="joinMissionBtn">ПРИСОЕДИНИТЬСЯ К МИССИИ</button>
+                </div>
+                <div class="planet-animation" id="planet-animation">
+                    <!-- 3D планета будет здесь -->
+                </div>
+            </section>
+
+            <section id="about" class="section">
+                <div class="container">
+                    <h2 class="section-title neon-text">О КОСМИЧЕСКОМ ЦЕНТРЕ</h2>
+                    <div class="about-content">
+                        <div class="about-text">
+                            <p>StarLab - это передовой исследовательский центр, посвященный изучению космоса, астрономии и разработке космических миссий. Наша команда ученых, инженеров и исследователей работает над самыми амбициозными проектами освоения космоса.</p>
+                            <p>Мы сотрудничаем с ведущими космическими агентствами мира и университетами, чтобы расширить границы человеческого знания о Вселенной. Наши исследования охватывают все аспекты космической науки - от изучения далеких галактик до разработки технологий для будущих межпланетных экспедиций.</p>
+                        </div>
+                        <div class="about-stats">
+                            <div class="stat">
+                                <span class="stat-number">15+</span>
+                                <span class="stat-label">КОСМИЧЕСКИХ МИССИЙ</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">42</span>
+                                <span class="stat-label">ОТКРЫТЫХ ЭКЗОПЛАНЕТЫ</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">127</span>
+                                <span class="stat-label">НАУЧНЫХ ПУБЛИКАЦИЙ</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="missions" class="section dark">
+                <div class="container">
+                    <h2 class="section-title neon-text">НАШИ МИССИИ</h2>
+                    <div class="missions-grid">
+                        <div class="mission-card">
+                            <div class="mission-icon">🚀</div>
+                            <h3>ARTEMIS PROGRAM</h3>
+                            <p>Возвращение человека на Луну и создание постоянной базы на лунной поверхности. Исследование лунных ресурсов и подготовка к будущим миссиям на Марс.</p>
+                            <div class="mission-status">АКТИВНАЯ</div>
+                        </div>
+                        <div class="mission-card">
+                            <div class="mission-icon">🛰️</div>
+                            <h3>EXOPLANET HUNTER</h3>
+                            <p>Поиск и изучение экзопланет в обитаемой зоне далеких звездных систем. Анализ атмосферы планет для поиска признаков жизни.</p>
+                            <div class="mission-status">АКТИВНАЯ</div>
+                        </div>
+                        <div class="mission-card">
+                            <div class="mission-icon">🔭</div>
+                            <h3>EVENT HORIZON</h3>
+                            <p>Изучение черных дыр и их влияния на пространство-время. Наблюдение за гравитационными волнами и экстремальными астрофизическими явлениями.</p>
+                            <div class="mission-status">ПЛАНИРОВАНИЕ</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="research" class="section">
+                <div class="container">
+                    <h2 class="section-title neon-text">НАУЧНЫЕ ИССЛЕДОВАНИЯ</h2>
+                    <div class="research-content">
+                        <div class="research-item">
+                            <h3>АСТРОФИЗИКА</h3>
+                            <p>Изучение физических свойств космических объектов и явлений. Исследование звезд, галактик, черных дыр и темной материи.</p>
+                        </div>
+                        <div class="research-item">
+                            <h3>КОСМОЛОГИЯ</h3>
+                            <p>Исследование происхождения и эволюции Вселенной. Изучение Большого взрыва, расширения Вселенной и космического микроволнового фона.</p>
+                        </div>
+                        <div class="research-item">
+                            <h3>ПЛАНЕТОЛОГИЯ</h3>
+                            <p>Анализ планет, лун и малых тел Солнечной системы. Изучение геологии, атмосферы и потенциальной обитаемости других миров.</p>
+                        </div>
+                        <div class="research-item">
+                            <h3>АСТРОБИОЛОГИЯ</h3>
+                            <p>Поиск жизни за пределами Земли и изучение её возможных форм. Исследование экстремофилов и условий для жизни в космосе.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="gallery" class="section dark">
+                <div class="container">
+                    <h2 class="section-title neon-text">КОСМИЧЕСКАЯ ГАЛЕРЕЯ</h2>
+                    <div class="gallery-container">
+                        <div class="gallery-item">
+                            <div class="gallery-image" id="gallery-1"></div>
+                            <div class="gallery-caption">ТУМАННОСТЬ ОРИОНА</div>
+                        </div>
+                        <div class="gallery-item">
+                            <div class="gallery-image" id="gallery-2"></div>
+                            <div class="gallery-caption">ГАЛАКТИКА АНДРОМЕДЫ</div>
+                        </div>
+                        <div class="gallery-item">
+                            <div class="gallery-image" id="gallery-3"></div>
+                            <div class="gallery-caption">КОЛЬЦА САТУРНА</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="contact" class="section">
+                <div class="container">
+                    <h2 class="section-title neon-text">СВЯЖИТЕСЬ С НАМИ</h2>
+                    <div class="contact-content">
+                        <div class="contact-info">
+                            <h3>STARLAB КОСМИЧЕСКИЙ ЦЕНТР</h3>
+                            <p><i class="fas fa-map-marker-alt"></i> КОСМИЧЕСКОЕ ШОССЕ, 42</p>
+                            <p><i class="fas fa-phone"></i> +7 (495) 123-45-67</p>
+                            <p><i class="fas fa-envelope"></i> CONTACT@STARLAB.SPACE</p>
+                            <p><i class="fas fa-clock"></i> ПН-ПТ: 9:00-18:00</p>
+                        </div>
+                        <form class="contact-form" id="contactForm">
+                            <input type="text" placeholder="Ваше имя" required>
+                            <input type="email" placeholder="Ваш email" required>
+                            <textarea placeholder="Ваше сообщение" rows="5" required></textarea>
+                            <button type="submit" class="pulse-glow">ОТПРАВИТЬ СООБЩЕНИЕ</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="container">
+                <p>&copy; 2023 STARLAB КОСМИЧЕСКИЙ ЦЕНТР. ВСЕ ПРАВА ЗАЩИЩЕНЫ.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <div class="notification" id="notification">
+        Спасибо за ваш интерес к StarLab! Мы свяжемся с вами в ближайшее время.
+    </div>
+
+    <script>
+        // Инициализация звездного неба
+        const starCanvas = document.getElementById('starCanvas');
+        const starCtx = starCanvas.getContext('2d');
+        
+        // Установка размеров canvas
+        starCanvas.width = window.innerWidth;
+        starCanvas.height = window.innerHeight;
+        
+        // Создание звезд
+        const stars = [];
+        const numStars = 300;
+        
+        for (let i = 0; i < numStars; i++) {
+            stars.push({
+                x: Math.random() * starCanvas.width,
+                y: Math.random() * starCanvas.height,
+                radius: Math.random() * 2,
+                speed: Math.random() * 0.5 + 0.1,
+                opacity: Math.random() * 0.8 + 0.2,
+                twinkleSpeed: Math.random() * 0.05 + 0.01,
+                twinkleDirection: Math.random() > 0.5 ? 1 : -1
+            });
+        }
+        
+        // Анимация звезд
+        function animateStars() {
+            starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+            starCtx.fillStyle = '#050518';
+            starCtx.fillRect(0, 0, starCanvas.width, starCanvas.height);
+            
+            stars.forEach(star => {
+                starCtx.beginPath();
+                starCtx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                
+                // Мерцание звезд
+                star.opacity += star.twinkleSpeed * star.twinkleDirection;
+                if (star.opacity <= 0.2 || star.opacity >= 1) {
+                    star.twinkleDirection *= -1;
+                }
+                
+                starCtx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+                starCtx.fill();
+                
+                star.x -= star.speed;
+                
+                if (star.x < 0) {
+                    star.x = starCanvas.width;
+                    star.y = Math.random() * starCanvas.height;
+                }
+            });
+            
+            requestAnimationFrame(animateStars);
+        }
+        
+        animateStars();
+        
+        // Инициализация туманностей
+        const nebulaCanvas = document.getElementById('nebulaCanvas');
+        const nebulaCtx = nebulaCanvas.getContext('2d');
+        
+        nebulaCanvas.width = window.innerWidth;
+        nebulaCanvas.height = window.innerHeight;
+        
+        // Создание туманностей
+        const nebulae = [];
+        const numNebulae = 5;
+        
+        for (let i = 0; i < numNebulae; i++) {
+            nebulae.push({
+                x: Math.random() * nebulaCanvas.width,
+                y: Math.random() * nebulaCanvas.height,
+                radius: Math.random() * 300 + 100,
+                color: i % 2 === 0 ? 'rgba(0, 243, 255, 0.1)' : 'rgba(185, 103, 255, 0.1)',
+                pulseSpeed: Math.random() * 0.002 + 0.001,
+                pulseDirection: 1,
+                currentRadius: Math.random() * 300 + 100
+            });
+        }
+        
+        // Анимация туманностей
+        function animateNebulae() {
+            nebulaCtx.clearRect(0, 0, nebulaCanvas.width, nebulaCanvas.height);
+            
+            nebulae.forEach(nebula => {
+                const gradient = nebulaCtx.createRadialGradient(
+                    nebula.x, nebula.y, 0,
+                    nebula.x, nebula.y, nebula.currentRadius
+                );
+                
+                gradient.addColorStop(0, nebula.color);
+                gradient.addColorStop(1, 'transparent');
+                
+                nebulaCtx.beginPath();
+                nebulaCtx.arc(nebula.x, nebula.y, nebula.currentRadius, 0, Math.PI * 2);
+                nebulaCtx.fillStyle = gradient;
+                nebulaCtx.fill();
+                
+                // Пульсация туманностей
+                nebula.currentRadius += nebula.pulseSpeed * nebula.pulseDirection;
+                if (nebula.currentRadius <= nebula.radius * 0.8 || nebula.currentRadius >= nebula.radius * 1.2) {
+                    nebula.pulseDirection *= -1;
+                }
+            });
+            
+            requestAnimationFrame(animateNebulae);
+        }
+        
+        animateNebulae();
+        
+        // Обработка изменения размера окна
+        window.addEventListener('resize', () => {
+            starCanvas.width = window.innerWidth;
+            starCanvas.height = window.innerHeight;
+            nebulaCanvas.width = window.innerWidth;
+            nebulaCanvas.height = window.innerHeight;
+        });
+        
+        // Навигация
+        const navToggle = document.querySelector('.nav-toggle');
+        const navMenu = document.querySelector('.nav-menu');
+        
+        navToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            navToggle.classList.toggle('active');
+        });
+        
+        // Плавная прокрутка для ссылок навигации
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                    
+                    // Закрытие мобильного меню после клика
+                    if (navMenu.classList.contains('active')) {
+                        navMenu.classList.remove('active');
+                        navToggle.classList.remove('active');
+                    }
+                }
+            });
+        });
+        
+        // Изменение навигации при прокрутке
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
+        // Обработка формы
+        const contactForm = document.getElementById('contactForm');
+        const notification = document.getElementById('notification');
+        
+        contactForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // В реальном приложении здесь был бы код для отправки данных формы
+            // Для демонстрации просто показываем уведомление
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+            
+            // Очистка формы
+            contactForm.reset();
+        });
+        
+        // Обработка кнопки "Присоединиться к миссии"
+        const joinMissionBtn = document.getElementById('joinMissionBtn');
+        
+        joinMissionBtn.addEventListener('click', () => {
+            // Прокрутка к форме контактов
+            document.querySelector('#contact').scrollIntoView({
+                behavior: 'smooth'
+            });
+            
+            // Показать уведомление
+            notification.textContent = "Заполните форму ниже, чтобы присоединиться к нашей миссии!";
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                notification.textContent = "Спасибо за ваш интерес к StarLab! Мы свяжемся с вами в ближайшее время.";
+            }, 5000);
+        });
+        
+        // Создание простой 3D планеты с помощью Three.js
+        function initPlanet() {
+            const container = document.getElementById('planet-animation');
+            
+            // Создание сцены, камеры и рендерера
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            
+            // Создание планеты
+            const geometry = new THREE.SphereGeometry(1, 32, 32);
+            
+            // Создание материала с неоновым свечением
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x00f3ff,
+                shininess: 100,
+                emissive: 0x003344,
+                specular: 0x00aaff
+            });
+            
+            const planet = new THREE.Mesh(geometry, material);
+            scene.add(planet);
+            
+            // Добавление освещения
+            const ambientLight = new THREE.AmbientLight(0x333333);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 3, 5);
+            scene.add(directionalLight);
+            
+            // Неоновое кольцо вокруг планеты
+            const ringGeometry = new THREE.RingGeometry(1.5, 2, 32);
+            const ringMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xb967ff, 
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.5
+            });
+            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+            ring.rotation.x = Math.PI / 2;
+            scene.add(ring);
+            
+            // Позиционирование камеры
+            camera.position.z = 3;
+            
+            // Анимация планеты
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                planet.rotation.y += 0.01;
+                ring.rotation.z += 0.005;
+                
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // Обработка изменения размера окна
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+        
+        // Инициализация планеты после загрузки страницы
+        window.addEventListener('load', initPlanet);
+    </script>
+</body>
+</html>
